@@ -1,9 +1,6 @@
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 
 public class ReadFile {
 
@@ -14,10 +11,20 @@ public class ReadFile {
     }
 
     public void scan() {
+        Set<String> stopWords = new TreeSet<>();
+        try (Scanner scanner = new Scanner(new File("english_stopwords.txt"))) {
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                stopWords.add(line);
+            }
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+
         try (Scanner scanner = new Scanner(new File("realdonaldtrump.csv"))) {
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
-                parseLine(line);
+                parseLine(line, stopWords);
             }
             mapPrint();
         } catch (FileNotFoundException e) {
@@ -25,13 +32,16 @@ public class ReadFile {
         }
     }
 
-    private void parseLine(String line) {
+    private void parseLine(String line, Set<String> stopWords) {
         String[] parts = line.split(","); // comma-separated values in .csv
         String tweet = parts[2]; // tweet "content" in CSV
 
         for (String word : tweet.split("[^a-zA-Z]+")) {
+
             if (word.equals("")) continue;
             word = word.toLowerCase();
+
+            if (stopWords.contains(word)) continue;
 
             Integer count = map.get(word);
             if (count == null) count = 0;
@@ -44,7 +54,7 @@ public class ReadFile {
         Comparator<Map.Entry<String, Integer>> comparator = Comparator.comparing(Map.Entry<String, Integer>::getValue).reversed();
 
         for (Map.Entry<String, Integer> entry :
-                map.entrySet().stream().sorted(comparator).toList()
+                map.entrySet().stream().sorted(comparator).limit(30).toList()
         ) {
             System.out.println(entry.getValue() + ":" + entry.getKey());
         }
